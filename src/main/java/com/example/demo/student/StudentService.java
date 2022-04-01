@@ -3,8 +3,12 @@ package com.example.demo.student;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
+
+import static com.example.demo.student.StudentValidatorType.*;
+import static com.example.demo.student.StudentValidatorType.NAME;
 
 @Service
 public class StudentService {
@@ -12,7 +16,7 @@ public class StudentService {
     private final StudentRepository studentRepository;
 
     @Autowired
-    public StudentService(StudentRepository studentRepository ) {
+    public StudentService(StudentRepository studentRepository) {
         this.studentRepository = studentRepository;
     }
 
@@ -35,5 +39,23 @@ public class StudentService {
             throw new IllegalStateException("Student with id " + id + "does not exist");
         }
         studentRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void updateStudent(Long id, String name, String email) {
+        Student student = studentRepository
+                .findById(id)
+                .orElseThrow(() -> new IllegalStateException("Student with id " + id + "does not exist"));
+
+        if (StudentValidator.validateStudentString(student, name, NAME)) {
+            student.setName(name);
+        }
+        if (StudentValidator.validateStudentString(student, name, EMAIL)) {
+            Optional<Student> studentOptional = studentRepository.findStudentByEmail(email);
+            if (studentOptional.isPresent()) {
+                throw new IllegalStateException("Email taken");
+            }
+            student.setEmail(email);
+        }
     }
 }
